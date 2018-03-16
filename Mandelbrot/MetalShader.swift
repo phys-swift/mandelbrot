@@ -76,7 +76,19 @@ struct MetalKernel: MetalShader {
         threadsPerGroup = MTLSize(width: width, height: threads/width, depth: 1)
     }
     
-    // encode kernel for execution into provided command buffer, with arguments passed as dictionaries
+    // dispatch compute encoder threads for execution
+    func dispatch(_ encoder: MTLComputeCommandEncoder, threadsPerGrid: MTLSize) {
+        // dispatchThreads does not work on devices as recent as iPhone 7
+        // encoder.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        
+        // dispatch thread groups to cover entire grid
+        let w = (threadsPerGrid.width + threadsPerGroup.width - 1)/threadsPerGroup.width
+        let h = (threadsPerGrid.height + threadsPerGroup.height - 1)/threadsPerGroup.height
+        let groupsPerGrid = MTLSize(width: w, height: h, depth: 1)
+        encoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+    }
+    
+    // encode kernel into provided command buffer, with arguments passed as dictionaries
     func encode(command: MTLCommandBuffer, buffers: [Int: MTLBuffer], textures: [Int: MTLTexture], threadsPerGrid: MTLSize) {
         // initialize compute command encoder for kernel execution
         guard let encoder = command.makeComputeCommandEncoder() else { return }
@@ -87,11 +99,10 @@ struct MetalKernel: MetalShader {
         for (index, texture) in textures { encoder.setTexture(texture, index: index) }
         
         // dispatch compute pass and end command encoding
-        encoder.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerGroup)
-        encoder.endEncoding()
+        dispatch(encoder, threadsPerGrid: threadsPerGrid); encoder.endEncoding()
     }
     
-    // encode kernel for execution into provided command buffer, with arguments passed as arrays
+    // encode kernel into provided command buffer, with arguments passed as arrays
     func encode(command: MTLCommandBuffer, buffers: [MTLBuffer], textures: [MTLTexture], threadsPerGrid provided: MTLSize? = nil) {
         // initialize compute command encoder for kernel execution
         guard let threadsPerGrid = provided ?? textures.last?.size else { return }
@@ -103,7 +114,6 @@ struct MetalKernel: MetalShader {
         for (index, texture) in textures.enumerated() { encoder.setTexture(texture, index: index) }
         
         // dispatch compute pass and end command encoding
-        encoder.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerGroup)
-        encoder.endEncoding()
+        dispatch(encoder, threadsPerGrid: threadsPerGrid); encoder.endEncoding()
     }
 }
