@@ -10,12 +10,12 @@ import UIKit
 import MetalKit
 
 class MandelbrotView: MTKView {
-    // compute pipeline
+    // MARK: compute pipeline
     var buffer: MTLBuffer! = nil
     var queue: MTLCommandQueue! = nil
     let shader = MetalKernel(kernel: "mandelbrot")
     
-    // viewport geometry
+    // MARK: viewport geometry
     var shift: CGPoint = CGPoint.zero
     var scale: CGFloat = 1.0
     
@@ -30,8 +30,17 @@ class MandelbrotView: MTKView {
         shift = CGPoint(x: -0.6, y: 0.0)
     }
     
-    // initalize after being decoded
+    // MARK: gesture recognizers
+    var tap = UITapGestureRecognizer()
+    var pan = UIPanGestureRecognizer()
+    var pinch = UIPinchGestureRecognizer()
+    
+    // MARK: initalize after being decoded
     override func awakeFromNib() {
+        // initialize MTKView
+        super.awakeFromNib()
+        
+        // initialize compute pipeline
         guard let device = MTLCreateSystemDefaultDevice(),
               let buffer = device.makeBuffer(length: MemoryLayout<float3x2>.size),
               let queue = device.makeCommandQueue()
@@ -42,11 +51,16 @@ class MandelbrotView: MTKView {
         self.queue = queue
         
         framebufferOnly = false
-        super.awakeFromNib()
         home(self)
+        
+        // add gesture recognisers
+        tap.numberOfTapsRequired = 2
+        tap.addTarget(self, action: #selector(home)); addGestureRecognizer(tap)
+        pan.addTarget(self, action: #selector(drag)); addGestureRecognizer(pan)
+        pinch.addTarget(self, action: #selector(zoom)); addGestureRecognizer(pinch)
     }
     
-    // render image in Metal view
+    // MARK: render image in Metal view
     override func draw(_ rect: CGRect) {
         // check that we have a draw destination
         guard currentRenderPassDescriptor != nil, let drawable = currentDrawable else { return }
@@ -59,5 +73,26 @@ class MandelbrotView: MTKView {
         shader.encode(command: command, buffers: [buffer], textures: [drawable.texture])
         command.present(drawable)
         command.commit()
+    }
+    
+    // MARK: drag the view around the screen
+    var origin = CGPoint.zero
+    
+    @IBAction func drag(_ gesture: UIPanGestureRecognizer) {
+        switch gesture.state {
+        case .began:
+            origin = shift
+        case .changed, .ended:
+            let t = gesture.translation(in: self)
+            shift = CGPoint(x: origin.x - contentScaleFactor * scale * t.x, y: origin.y - contentScaleFactor*scale*t.y)
+        case .cancelled:
+            shift = origin
+        default: break
+        }
+    }
+    
+    // MARK: zoom the view
+    @IBAction func zoom(_ gesture: UIPinchGestureRecognizer) {
+        scale /= gesture.scale; gesture.scale = 1.0
     }
 }
