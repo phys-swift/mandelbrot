@@ -15,12 +15,12 @@ kernel void mandelbrot(
     uint2 gid                           [[ thread_position_in_grid ]]
 ) {
     const float2 c = transform * float3(gid.x, gid.y, 1);
-    float2 z = c; float w = 0.0; const ushort n = 20;
+    float2 z = c; float w = 0.0; const ushort n = 100;
     
     // escape time iteration
     for (ushort i = 0; i < n; i++) {
         z = float2(z.x*z.x-z.y*z.y, 2.0*z.x*z.y) + c;
-        if (dot(z,z) > 4.0) { w = 1.0/(n-i); break; }
+        if (dot(z,z) > 4.0) { w = 5.0/(n-i + log(log(dot(z,z)))/log(2.0)); break; }
     }
     
     // apply rendering colormap
