@@ -17,7 +17,12 @@ class MandelbrotView: MTKView {
     
     // MARK: viewport geometry
     var shift: CGPoint = CGPoint.zero
-    var scale: CGFloat = 1.0
+    var scale: CGFloat = 1.0 {
+        didSet {
+            if scale < 1.0e-8 { scale = 1.0e-8 }
+            if scale > 1.0e-2 { scale = 1.0e-2 }
+        }
+    }
     
     var map: CGAffineTransform {
         let x = shift.x - (scale/2.0)*drawableSize.width
@@ -54,7 +59,7 @@ class MandelbrotView: MTKView {
         home(self)
         
         // add gesture recognisers
-        tap.numberOfTapsRequired = 2
+        tap.numberOfTapsRequired = 2; pan.maximumNumberOfTouches = 1
         tap.addTarget(self, action: #selector(home)); addGestureRecognizer(tap)
         pan.addTarget(self, action: #selector(drag)); addGestureRecognizer(pan)
         pinch.addTarget(self, action: #selector(zoom)); addGestureRecognizer(pinch)
