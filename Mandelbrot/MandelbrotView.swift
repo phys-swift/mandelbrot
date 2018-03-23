@@ -16,29 +16,38 @@ class MandelbrotView: MTKView {
     let shader = MetalKernel(kernel: "mandelbrot")
     
     // MARK: viewport geometry
-    var shift: CGPoint = CGPoint.zero
+    var theta: CGFloat = 0.0
     var scale: CGFloat = 1.0 {
         didSet {
             if scale < 1.0e-8 { scale = 1.0e-8 }
             if scale > 1.0e-2 { scale = 1.0e-2 }
         }
     }
+    var shift: CGPoint = CGPoint.zero
     
-    var map: CGAffineTransform {
-        let x = shift.x - (scale/2.0)*drawableSize.width
-        let y = shift.y - (scale/2.0)*drawableSize.height
-        return CGAffineTransform(a: scale, b: 0, c: 0, d: scale, tx: x, ty:y)
+    var rotation: CGAffineTransform {
+        let a = scale * cos(theta), b = scale * sin(theta)
+        return CGAffineTransform(a: a, b: b, c: -b, d: a, tx: 0, ty: 0)
     }
     
+    var map: CGAffineTransform {
+        let a = scale * cos(theta), b = scale * sin(theta)
+        let x = shift.x - (a * drawableSize.width - b * drawableSize.height)/2.0
+        let y = shift.y - (b * drawableSize.width + a * drawableSize.height)/2.0
+        return CGAffineTransform(a: a, b: b, c: -b, d: a, tx: x, ty: y)
+    }
+    
+    // MARK: center fractal on the screen
     @IBAction func home(_ sender: AnyObject?) {
         scale = max(3.0/drawableSize.width, 2.0/drawableSize.height)
-        shift = CGPoint(x: -0.6, y: 0.0)
+        shift = CGPoint(x: -0.6, y: 0.0); theta = 0.0
     }
     
     // MARK: gesture recognizers
     var tap = UITapGestureRecognizer()
     var pan = UIPanGestureRecognizer()
     var pinch = UIPinchGestureRecognizer()
+    var turn = UIRotationGestureRecognizer()
     
     // MARK: initalize after being decoded
     override func awakeFromNib() {
@@ -63,6 +72,7 @@ class MandelbrotView: MTKView {
         tap.addTarget(self, action: #selector(home)); addGestureRecognizer(tap)
         pan.addTarget(self, action: #selector(drag)); addGestureRecognizer(pan)
         pinch.addTarget(self, action: #selector(zoom)); addGestureRecognizer(pinch)
+        turn.addTarget(self, action: #selector(rotate)); addGestureRecognizer(turn)
     }
     
     // MARK: render image in Metal view
@@ -80,20 +90,12 @@ class MandelbrotView: MTKView {
         command.commit()
     }
     
-    // MARK: drag the view around the screen
-    var origin = CGPoint.zero
-    
+    // MARK: drag the view
     @IBAction func drag(_ gesture: UIPanGestureRecognizer) {
-        switch gesture.state {
-        case .began:
-            origin = shift
-        case .changed, .ended:
-            let t = gesture.translation(in: self)
-            shift = CGPoint(x: origin.x - contentScaleFactor * scale * t.x, y: origin.y - contentScaleFactor*scale*t.y)
-        case .cancelled:
-            shift = origin
-        default: break
-        }
+        let delta = gesture.translation(in: self) * contentScaleFactor
+        
+        shift -= delta.applying(rotation)
+        gesture.setTranslation(CGPoint.zero, in: self)
     }
     
     // MARK: zoom the view
@@ -102,6 +104,17 @@ class MandelbrotView: MTKView {
         
         let a = center.applying(map)
         scale /= gesture.scale; gesture.scale = 1.0
+        let b = center.applying(map)
+        
+        shift += a-b
+    }
+    
+    // MARK: rotate the view
+    @IBAction func rotate(_ gesture: UIRotationGestureRecognizer) {
+        let center = gesture.location(in: self) * contentScaleFactor
+        
+        let a = center.applying(map)
+        theta -= gesture.rotation; gesture.rotation = 0.0
         let b = center.applying(map)
         
         shift += a-b
