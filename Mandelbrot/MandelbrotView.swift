@@ -9,7 +9,7 @@
 import UIKit
 import MetalKit
 
-class MandelbrotView: MTKView {
+class MandelbrotView: MTKView, UIGestureRecognizerDelegate {
     // MARK: compute pipeline
     var buffer: MTLBuffer! = nil
     var queue: MTLCommandQueue! = nil
@@ -49,6 +49,9 @@ class MandelbrotView: MTKView {
     var pinch = UIPinchGestureRecognizer()
     var turn = UIRotationGestureRecognizer()
     
+    // MARK: pan, pinch and rotate are recognized simultaneously
+    func gestureRecognizer(_ gesture: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { return other != tap }
+    
     // MARK: initalize after being decoded
     override func awakeFromNib() {
         // initialize MTKView
@@ -68,7 +71,8 @@ class MandelbrotView: MTKView {
         home(self)
         
         // add gesture recognisers
-        tap.numberOfTapsRequired = 2; pan.maximumNumberOfTouches = 1
+        tap.numberOfTapsRequired = 2; pan.maximumNumberOfTouches = 2
+        pan.delegate = self; pinch.delegate = self; turn.delegate = self
         tap.addTarget(self, action: #selector(home)); addGestureRecognizer(tap)
         pan.addTarget(self, action: #selector(drag)); addGestureRecognizer(pan)
         pinch.addTarget(self, action: #selector(zoom)); addGestureRecognizer(pinch)
