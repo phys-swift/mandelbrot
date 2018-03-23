@@ -98,6 +98,12 @@ class MandelbrotView: MTKView {
     
     // MARK: zoom the view
     @IBAction func zoom(_ gesture: UIPinchGestureRecognizer) {
+        let center = gesture.location(in: self) * contentScaleFactor
+        
+        let a = center.applying(map)
         scale /= gesture.scale; gesture.scale = 1.0
+        let b = center.applying(map)
+        
+        shift += a-b
     }
 }
