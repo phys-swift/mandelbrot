@@ -16,13 +16,15 @@ kernel void mandelbrot(
     uint2 gid                           [[ thread_position_in_grid ]]
 ) {
     const float2 c = transform * float3(gid.x, gid.y, 1);
-    float2 z = c; float w = 0.0; const ushort n = 100;
+    float2 z = c; float w = 0.0; const ushort n = 100; ushort i;
     
     // escape time iteration
-    for (ushort i = 0; i < n; i++) {
+    for (i = 0; i < n && dot(z,z) < 4.0; i++) {
         z = float2(z.x*z.x-z.y*z.y, 2.0*z.x*z.y) + c;
-        if (dot(z,z) > 4.0) { w = 5.0/(n-i + log(log(dot(z,z)))/log(2.0)); break; }
     }
+    
+    // normalized iteration count
+    if (i < n) { w = 5.0/(n-i + log(log(dot(z,z)))/log(2.0)); }
     
     // apply rendering colormap
     float4 pixel = float4(0.0, 4.0*w, 8.0*w, 1.0);
@@ -72,13 +74,15 @@ kernel void mandelbrot64(
     const float4 c = float4(re,im);
     
     // initialize Mandelbrot iterator
-    float4 z = c; float w = 0.0; const ushort n = 100;
+    float4 z = c; float w = 0.0; const ushort n = 100; ushort i;
     
     // escape time iteration
-    for (ushort i = 0; i < n; i++) {
+    for (i = 0; i < n && dot(z.xz,z.xz) < 4.0; i++) {
         z = float4(df64_add(df64_add(df64_mul(z.xy,z.xy), -df64_mul(z.zw, z.zw)), c.xy), df64_add(2*df64_mul(z.xy,z.zw), c.zw));
-        if (dot(z.xz,z.xz) > 4.0) { w = 5.0/(n-i + log(log(dot(z.xz,z.xz)))/log(2.0)); break; }
     }
+    
+    // normalized iteration count
+    if (i < n) { w = 5.0/(n-i + log(log(dot(z.xz,z.xz)))/log(2.0)); }
     
     // apply rendering colormap
     float4 pixel = float4(0.0, 4.0*w, 8.0*w, 1.0);
