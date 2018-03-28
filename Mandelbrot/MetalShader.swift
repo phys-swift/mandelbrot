@@ -9,8 +9,15 @@
 import Foundation
 import MetalKit
 
+// MARK: support for double-float numbers (split at (1 << 29) + 1)
+func df64(_ a: Double, _ b: Double) -> float4 {
+    let u = double2(a,b), t = 536870913 * u, hi = t - (t - u), lo = u - hi
+    return float4(Float(hi.x), Float(lo.x), Float(hi.y), Float(lo.y))
+}
+
 // MARK: SIMD data type bindings of Core Graphics affine transform components for Metal API
 extension CGAffineTransform {
+    var float3x4: float3x4 { return simd.float3x4(df64(Double(a),Double(b)), df64(Double(c),Double(d)), df64(Double(tx),Double(ty))) }
     var float3x2: float3x2 { return simd.float3x2(float2(Float(a),Float(b)), float2(Float(c),Float(d)), float2(Float(tx),Float(ty))) }
     init(m: float3x2) { self.init(a: CGFloat(m[0,0]), b: CGFloat(m[0,1]), c: CGFloat(m[1,0]), d: CGFloat(m[1,1]), tx: CGFloat(m[2,0]), ty: CGFloat(m[2,1])) }
 }

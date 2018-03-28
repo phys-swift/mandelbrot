@@ -58,3 +58,30 @@ inline float2 df64_mul(float2 a, float2 b) {
     return q2sum(p, e + a.x*b.y + a.y*b.x);
 }
 
+// MARK: double precision Mandelbrot renderer
+kernel void mandelbrot64(
+    texture2d<float,access::write>      output [[ texture(0) ]],
+    constant float3x4 &transform        [[ buffer(0) ]],
+    uint2 gid                           [[ thread_position_in_grid ]]
+) {
+    // affine transform in double-float precision
+    const float2 x = float2(gid.x,0), y = float2(gid.y,0);
+    const float4 a = transform[0], b = transform[1], t = transform[2];
+    const float2 re = df64_add(df64_add(df64_mul(a.xy,x), df64_mul(b.xy,y)), t.xy);
+    const float2 im = df64_add(df64_add(df64_mul(a.zw,x), df64_mul(b.zw,y)), t.zw);
+    const float4 c = float4(re,im);
+    
+    // initialize Mandelbrot iterator
+    float4 z = c; float w = 0.0; const ushort n = 100;
+    
+    // escape time iteration
+    for (ushort i = 0; i < n; i++) {
+        z = float4(df64_add(df64_add(df64_mul(z.xy,z.xy), -df64_mul(z.zw, z.zw)), c.xy), df64_add(2*df64_mul(z.xy,z.zw), c.zw));
+        if (dot(z.xz,z.xz) > 4.0) { w = 5.0/(n-i + log(log(dot(z.xz,z.xz)))/log(2.0)); break; }
+    }
+    
+    // apply rendering colormap
+    float4 pixel = float4(0.0, 4.0*w, 8.0*w, 1.0);
+    
+    output.write(pixel, gid);
+}

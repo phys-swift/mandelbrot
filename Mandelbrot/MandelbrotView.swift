@@ -13,7 +13,7 @@ class MandelbrotView: MTKView, UIGestureRecognizerDelegate {
     // MARK: compute pipeline
     var buffer: MTLBuffer! = nil
     var queue: MTLCommandQueue! = nil
-    let shader = MetalKernel(kernel: "mandelbrot")
+    let shader = MetalKernel(kernel: "mandelbrot64")
     
     // MARK: viewport geometry
     var theta: CGFloat = 0.0
@@ -59,7 +59,7 @@ class MandelbrotView: MTKView, UIGestureRecognizerDelegate {
         
         // initialize compute pipeline
         guard let device = MTLCreateSystemDefaultDevice(),
-              let buffer = device.makeBuffer(length: MemoryLayout<float3x2>.size),
+              let buffer = device.makeBuffer(length: MemoryLayout<float3x4>.size),
               let queue = device.makeCommandQueue()
               else { fatalError("Metal Framework could not be initalized") }
         
@@ -85,7 +85,7 @@ class MandelbrotView: MTKView, UIGestureRecognizerDelegate {
         guard currentRenderPassDescriptor != nil, let drawable = currentDrawable else { return }
         
         // update coordinate map buffer for GPU kernel
-        buffer.contents().storeBytes(of: map.float3x2, as: float3x2.self)
+        buffer.contents().storeBytes(of: map.float3x4, as: float3x4.self)
         
         // initialize compute command buffer
         guard let command = queue.makeCommandBuffer() else { return }
