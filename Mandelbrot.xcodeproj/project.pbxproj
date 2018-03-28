@@ -294,6 +294,7 @@
 				DEVELOPMENT_TEAM = 28GCAU455A;
 				INFOPLIST_FILE = Mandelbrot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MTL_FAST_MATH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = ca.sfu.phys.mandelbrot;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 4.0;
@@ -309,6 +310,7 @@
 				DEVELOPMENT_TEAM = 28GCAU455A;
 				INFOPLIST_FILE = Mandelbrot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MTL_FAST_MATH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = ca.sfu.phys.mandelbrot;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 4.0;
